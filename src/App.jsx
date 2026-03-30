@@ -114,7 +114,7 @@ export default function SaiRohanDrivingSchool() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
   const [scrolled, setScrolled] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", course: "Intermediate", timing: "Morning" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", age: "", gender: "", bloodGroup: "", phone: "", course: "Intermediate", timing: "Morning" });
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 50);
@@ -125,7 +125,7 @@ export default function SaiRohanDrivingSchool() {
   const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); setMenuOpen(false); };
 
   const whatsappEnquiry = () => {
-    const msg = `Hi Sai Rohan Driving School! 🚗\n\nI'm interested in learning driving.\n\n👤 Name: ${form.name}\n📱 Phone: ${form.phone}\n📚 Course: ${form.course}\n⏰ Timing: ${form.timing}\n\nPlease share more details.`;
+    const msg = `Hi Sai Rohan Driving School! 🚗\n\nI'm interested in learning driving.\n\n👤 First Name: ${form.firstName}\n👤 Last Name: ${form.lastName}\n🎂 Age: ${form.age}\n🧍 Gender: ${form.gender}\n🩸 Blood Group: ${form.bloodGroup}\n📱 Phone: ${form.phone}\n📚 Course: ${form.course}\n⏰ Timing: ${form.timing}\n\nPlease share more details.`;
     window.open(`https://wa.me/919133999282?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -408,9 +408,44 @@ export default function SaiRohanDrivingSchool() {
           <div style={{ maxWidth: "500px", margin: "0 auto" }}>
             <Reveal delay={0.1}>
               <div style={{ background: "#fff", borderRadius: "22px", padding: "32px 24px", border: "1px solid #e0e8f0", boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>FIRST NAME</label>
+                    <input className="field" placeholder="First name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>LAST NAME</label>
+                    <input className="field" placeholder="Last name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div>
+                    <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>AGE</label>
+                    <input className="field" type="number" placeholder="Your age" min="16" max="100" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>GENDER</label>
+                    <select className="field" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
+                      <option value="">Select gender</option>
+                      <option>Male</option>
+                      <option>Female</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
                 <div style={{ marginBottom: "12px" }}>
-                  <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>YOUR NAME</label>
-                  <input className="field" placeholder="Full name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>BLOOD GROUP</label>
+                  <select className="field" value={form.bloodGroup} onChange={e => setForm({ ...form, bloodGroup: e.target.value })}>
+                    <option value="">Select blood group</option>
+                    <option>A+</option>
+                    <option>A-</option>
+                    <option>B+</option>
+                    <option>B-</option>
+                    <option>AB+</option>
+                    <option>AB-</option>
+                    <option>O+</option>
+                    <option>O-</option>
+                  </select>
                 </div>
                 <div style={{ marginBottom: "12px" }}>
                   <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>PHONE NUMBER</label>
