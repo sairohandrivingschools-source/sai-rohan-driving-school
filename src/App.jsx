@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-// ─── STORAGE HELPERS (localStorage simulation with state) ───
-const DEFAULT_PHOTOS = [
+const PHOTOS = [
   { id: 1, url: "https://images.unsplash.com/photo-1449965408869-ebd13bc9e5c8?w=400&h=300&fit=crop", caption: "Training Session" },
   { id: 2, url: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=400&h=300&fit=crop", caption: "Our Training Car" },
   { id: 3, url: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop", caption: "Road Practice" },
@@ -10,7 +9,7 @@ const DEFAULT_PHOTOS = [
   { id: 6, url: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop", caption: "Certified Students" },
 ];
 
-const DEFAULT_REVIEWS = [
+const REVIEWS = [
   { id: 1, name: "Priya Reddy", text: "Excellent training! Got my license in first attempt. Very patient instructors.", rating: 5 },
   { id: 2, name: "Karthik M.", text: "Best driving school in Boduppal. The trainers are very friendly and professional.", rating: 5 },
   { id: 3, name: "Lakshmi D.", text: "My daughter learned here. Very safe dual-control cars. Highly recommend!", rating: 5 },
@@ -21,12 +20,11 @@ const DEFAULT_REVIEWS = [
   { id: 8, name: "Manoj T.", text: "Completed advanced course. Now driving on highways confidently. Worth every rupee.", rating: 5 },
 ];
 
-const DEFAULT_COURSES = [
+const COURSES = [
   {
     name: "Basic",
     duration: "30 Days",
     sessions: "30 Sessions",
-    price: "₹4,000",
     features: ["Steering & gear basics", "City road practice", "Parking training", "Traffic rules", "License guidance"],
     tag: null,
   },
@@ -34,7 +32,6 @@ const DEFAULT_COURSES = [
     name: "Intermediate",
     duration: "45 Days",
     sessions: "45 Sessions",
-    price: "₹6,000",
     features: ["Everything in Basic", "Highway driving", "Night driving basics", "Defensive driving", "RTO test preparation", "License assistance"],
     tag: "POPULAR",
   },
@@ -42,7 +39,6 @@ const DEFAULT_COURSES = [
     name: "Advance",
     duration: "60 Days",
     sessions: "60 Sessions",
-    price: "₹8,500",
     features: ["Everything in Intermediate", "Advanced highway skills", "Hill & slope practice", "All weather driving", "Confidence building", "Guaranteed license support", "Lifetime refresher sessions"],
     tag: "BEST VALUE",
   },
@@ -66,7 +62,6 @@ const FAQS = [
   { q: "Where is your driving school located?", a: "We are located at 9-10, beside Akruti Township, Tulip Block, West Hanuman Nagar, Boduppal, Hyderabad, Telangana 500092." },
 ];
 
-// ─── HOOKS ───
 function useInView(threshold = 0.1) {
   const ref = useRef(null);
   const [v, setV] = useState(false);
@@ -85,7 +80,6 @@ function Reveal({ children, delay = 0 }) {
   return <div ref={ref} style={{ opacity: v ? 1 : 0, transform: v ? "none" : "translateY(36px)", transition: `all 0.65s cubic-bezier(0.22,1,0.36,1) ${delay}s` }}>{children}</div>;
 }
 
-// ─── HORIZONTAL SCROLL COMPONENT ───
 function HScroll({ children }) {
   const scrollRef = useRef(null);
   const scroll = (dir) => {
@@ -116,149 +110,10 @@ function HScroll({ children }) {
   );
 }
 
-// ─── ADMIN PANEL ───
-function AdminPanel({ photos, setPhotos, reviews, setReviews, courses, setCourses, onClose }) {
-  const [tab, setTab] = useState("photos");
-  const [newPhoto, setNewPhoto] = useState({ url: "", caption: "" });
-  const [newReview, setNewReview] = useState({ name: "", text: "", rating: 5 });
-
-  const addPhoto = () => {
-    if (newPhoto.url && newPhoto.caption) {
-      setPhotos([...photos, { id: Date.now(), ...newPhoto }]);
-      setNewPhoto({ url: "", caption: "" });
-    }
-  };
-
-  const removePhoto = (id) => setPhotos(photos.filter(p => p.id !== id));
-
-  const addReview = () => {
-    if (newReview.name && newReview.text) {
-      setReviews([...reviews, { id: Date.now(), ...newReview }]);
-      setNewReview({ name: "", text: "", rating: 5 });
-    }
-  };
-
-  const removeReview = (id) => setReviews(reviews.filter(r => r.id !== id));
-
-  const updateCourse = (idx, field, value) => {
-    const updated = [...courses];
-    updated[idx] = { ...updated[idx], [field]: value };
-    setCourses(updated);
-  };
-
-  const tabStyle = (t) => ({
-    padding: "10px 20px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer",
-    background: tab === t ? "#2196F3" : "#f0f4f8", color: tab === t ? "#fff" : "#555",
-    border: "none", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s",
-  });
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-      <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "700px", maxHeight: "85vh", overflow: "auto", padding: "28px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#1a1a1a", fontFamily: "'Outfit', sans-serif" }}>⚙️ Admin Panel</h2>
-          <button onClick={onClose} style={{ background: "#f0f0f0", border: "none", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", fontSize: "16px" }}>✕</button>
-        </div>
-
-        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-          <button style={tabStyle("photos")} onClick={() => setTab("photos")}>📸 Photos</button>
-          <button style={tabStyle("reviews")} onClick={() => setTab("reviews")}>⭐ Reviews</button>
-          <button style={tabStyle("courses")} onClick={() => setTab("courses")}>📚 Courses</button>
-        </div>
-
-        {/* PHOTOS TAB */}
-        {tab === "photos" && (
-          <div>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-              <input value={newPhoto.url} onChange={e => setNewPhoto({ ...newPhoto, url: e.target.value })}
-                placeholder="Image URL" style={{ flex: 2, minWidth: "200px", padding: "10px 14px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <input value={newPhoto.caption} onChange={e => setNewPhoto({ ...newPhoto, caption: e.target.value })}
-                placeholder="Caption" style={{ flex: 1, minWidth: "120px", padding: "10px 14px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <button onClick={addPhoto} style={{ padding: "10px 20px", borderRadius: "8px", background: "#2196F3", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>+ Add</button>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-              {photos.map(p => (
-                <div key={p.id} style={{ position: "relative", width: "120px" }}>
-                  <img src={p.url} alt={p.caption} style={{ width: "120px", height: "80px", objectFit: "cover", borderRadius: "8px" }}
-                    onError={e => { e.target.style.background = "#f0f4f8"; e.target.alt = "⚠️"; }} />
-                  <div style={{ fontSize: "10px", color: "#777", marginTop: "4px", textAlign: "center" }}>{p.caption}</div>
-                  <button onClick={() => removePhoto(p.id)} style={{
-                    position: "absolute", top: "-6px", right: "-6px", width: "22px", height: "22px", borderRadius: "50%",
-                    background: "#e84c3d", color: "#fff", border: "none", cursor: "pointer", fontSize: "10px", fontWeight: 800,
-                  }}>✕</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* REVIEWS TAB */}
-        {tab === "reviews" && (
-          <div>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
-              <input value={newReview.name} onChange={e => setNewReview({ ...newReview, name: e.target.value })}
-                placeholder="Student name" style={{ flex: 1, minWidth: "140px", padding: "10px 14px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <select value={newReview.rating} onChange={e => setNewReview({ ...newReview, rating: Number(e.target.value) })}
-                style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>
-                {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} ★</option>)}
-              </select>
-            </div>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-              <input value={newReview.text} onChange={e => setNewReview({ ...newReview, text: e.target.value })}
-                placeholder="Review text" style={{ flex: 1, padding: "10px 14px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-              <button onClick={addReview} style={{ padding: "10px 20px", borderRadius: "8px", background: "#2196F3", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>+ Add</button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {reviews.map(r => (
-                <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#f8f9fa", borderRadius: "8px" }}>
-                  <div>
-                    <span style={{ fontWeight: 700, fontSize: "13px", color: "#1a1a1a" }}>{r.name}</span>
-                    <span style={{ color: "#f39c12", marginLeft: "8px", fontSize: "12px" }}>{"★".repeat(r.rating)}</span>
-                    <div style={{ fontSize: "12px", color: "#777", marginTop: "2px" }}>{r.text.substring(0, 60)}...</div>
-                  </div>
-                  <button onClick={() => removeReview(r.id)} style={{ background: "#e84c3d", color: "#fff", border: "none", width: "28px", height: "28px", borderRadius: "50%", cursor: "pointer", fontSize: "12px", fontWeight: 800 }}>✕</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* COURSES TAB */}
-        {tab === "courses" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {courses.map((c, idx) => (
-              <div key={idx} style={{ padding: "16px", background: "#f8f9fa", borderRadius: "12px" }}>
-                <div style={{ fontSize: "15px", fontWeight: 800, color: "#2196F3", marginBottom: "10px" }}>{c.name} Plan</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  <div>
-                    <label style={{ fontSize: "11px", color: "#999", fontWeight: 600 }}>DURATION</label>
-                    <input value={c.duration} onChange={e => updateCourse(idx, "duration", e.target.value)}
-                      style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: "11px", color: "#999", fontWeight: 600 }}>SESSIONS</label>
-                    <input value={c.sessions} onChange={e => updateCourse(idx, "sessions", e.target.value)}
-                      style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── MAIN COMPONENT ───
 export default function SaiRohanDrivingSchool() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
   const [scrolled, setScrolled] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [photos, setPhotos] = useState(DEFAULT_PHOTOS);
-  const [reviews, setReviews] = useState(DEFAULT_REVIEWS);
-  const [courses, setCourses] = useState(DEFAULT_COURSES);
   const [form, setForm] = useState({ name: "", phone: "", course: "Intermediate", timing: "Morning" });
 
   useEffect(() => {
@@ -322,8 +177,6 @@ export default function SaiRohanDrivingSchool() {
         }
         @media (min-width: 769px) { .mob-btn { display: none !important; } .mob-nav { display: none !important; } }
       `}</style>
-
-      {showAdmin && <AdminPanel photos={photos} setPhotos={setPhotos} reviews={reviews} setReviews={setReviews} courses={courses} setCourses={setCourses} onClose={() => setShowAdmin(false)} />}
 
       {/* NAV */}
       <nav style={{
@@ -414,7 +267,7 @@ export default function SaiRohanDrivingSchool() {
             <h2 className="sec-h2" style={{ fontFamily: "'Outfit', sans-serif", fontSize: "36px", fontWeight: 900, color: C.text }}>Choose Your <span style={{ color: C.pri }}>Driving Plan</span></h2>
           </div></Reveal>
           <div className="grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "18px" }}>
-            {courses.map((c, i) => (
+            {COURSES.map((c, i) => (
               <Reveal key={i} delay={i * 0.1}>
                 <div style={{
                   background: "#fff", borderRadius: "20px", padding: "32px 24px",
@@ -471,7 +324,7 @@ export default function SaiRohanDrivingSchool() {
         </div>
       </section>
 
-      {/* GALLERY — HORIZONTAL SCROLL */}
+      {/* GALLERY */}
       <section id="gallery" style={{ padding: "80px 28px", background: C.card }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <Reveal><div style={{ textAlign: "center", marginBottom: "36px" }}>
@@ -480,7 +333,7 @@ export default function SaiRohanDrivingSchool() {
           </div></Reveal>
           <Reveal delay={0.1}>
             <HScroll>
-              {photos.map(p => (
+              {PHOTOS.map(p => (
                 <div key={p.id} style={{ minWidth: "280px", scrollSnapAlign: "start", flexShrink: 0 }}>
                   <img src={p.url} alt={p.caption} style={{ width: "280px", height: "200px", objectFit: "cover", borderRadius: "16px", display: "block" }}
                     onError={e => { e.target.style.background = C.priLight; }} />
@@ -492,7 +345,7 @@ export default function SaiRohanDrivingSchool() {
         </div>
       </section>
 
-      {/* REVIEWS — HORIZONTAL SCROLL */}
+      {/* REVIEWS */}
       <section id="reviews" style={{ padding: "80px 28px", background: "#fff" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <Reveal><div style={{ textAlign: "center", marginBottom: "36px" }}>
@@ -501,7 +354,7 @@ export default function SaiRohanDrivingSchool() {
           </div></Reveal>
           <Reveal delay={0.1}>
             <HScroll>
-              {reviews.map(r => (
+              {REVIEWS.map(r => (
                 <div key={r.id} style={{
                   minWidth: "300px", scrollSnapAlign: "start", flexShrink: 0,
                   background: C.card, borderRadius: "18px", padding: "24px 22px",
@@ -544,7 +397,7 @@ export default function SaiRohanDrivingSchool() {
         </div>
       </section>
 
-      {/* CONTACT + MAP */}
+      {/* CONTACT */}
       <section id="contact" style={{ padding: "80px 28px", background: `linear-gradient(135deg, #fff, ${C.priLight})` }}>
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           <Reveal><div style={{ textAlign: "center", marginBottom: "36px" }}>
@@ -553,7 +406,6 @@ export default function SaiRohanDrivingSchool() {
           </div></Reveal>
 
           <div style={{ maxWidth: "500px", margin: "0 auto" }}>
-            {/* Form */}
             <Reveal delay={0.1}>
               <div style={{ background: "#fff", borderRadius: "22px", padding: "32px 24px", border: "1px solid #e0e8f0", boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}>
                 <div style={{ marginBottom: "12px" }}>
@@ -567,7 +419,7 @@ export default function SaiRohanDrivingSchool() {
                 <div style={{ marginBottom: "12px" }}>
                   <label style={{ fontSize: "12px", color: C.sub, fontWeight: 600, display: "block", marginBottom: "6px" }}>COURSE</label>
                   <select className="field" value={form.course} onChange={e => setForm({ ...form, course: e.target.value })}>
-                    {courses.map(c => <option key={c.name}>{c.name}</option>)}
+                    {COURSES.map(c => <option key={c.name}>{c.name}</option>)}
                   </select>
                 </div>
                 <div style={{ marginBottom: "18px" }}>
@@ -644,13 +496,12 @@ export default function SaiRohanDrivingSchool() {
             </div>
           </div>
         </div>
-        <div style={{ borderTop: "1px solid #2a3a4a", paddingTop: "18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ borderTop: "1px solid #2a3a4a", paddingTop: "18px", textAlign: "center" }}>
           <span style={{ fontSize: "11px", color: "#556677" }}>© {new Date().getFullYear()} Sai Rohan Motor Driving School. All rights reserved.</span>
-          <span onClick={() => setShowAdmin(true)} style={{ fontSize: "11px", color: "#334455", cursor: "pointer" }}>⚙️ Admin</span>
         </div>
       </footer>
 
-      {/* FLOATING WHATSAPP (proper icon) */}
+      {/* FLOATING WHATSAPP */}
       <a href="https://wa.me/919133999282?text=Hi!%20I%20want%20to%20learn%20driving.%20Please%20share%20course%20details." target="_blank" rel="noopener noreferrer" className="wa-float">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       </a>
