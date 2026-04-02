@@ -203,11 +203,11 @@ function CoursesSection({ toast }) {
         </div>
         <Card style={{ maxWidth: "620px" }}>
           <FInput label="COURSE NAME" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Basic" required />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div className="admin-grid-2">
             <FInput label="DURATION" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="30 Days" />
             <FInput label="SESSIONS" value={form.sessions} onChange={(e) => setForm({ ...form, sessions: e.target.value })} placeholder="30 Sessions" />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div className="admin-grid-2">
             <FInput label="PRICE (₹)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="e.g. 3500" />
             <FInput label="PRICE NOTE" value={form.priceNote} onChange={(e) => setForm({ ...form, priceNote: e.target.value })} placeholder="e.g. all inclusive" />
           </div>
@@ -660,18 +660,18 @@ function HeroSection({ toast }) {
       <SectionTitle title="Hero Section" subtitle="Edit the main banner at the top of the website" />
       <Card style={{ maxWidth: "640px" }}>
         <FInput label="BADGE TEXT" value={form.badge} onChange={(e) => setForm({ ...form, badge: e.target.value })} placeholder="🚗 Boduppal, Hyderabad" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div className="admin-grid-2">
           <FInput label="HEADLINE LINE 1" value={form.headline1} onChange={(e) => setForm({ ...form, headline1: e.target.value })} placeholder="Learn to Drive" />
           <FInput label="HEADLINE LINE 2 (colored)" value={form.headline2} onChange={(e) => setForm({ ...form, headline2: e.target.value })} placeholder="with Confidence" />
         </div>
         <FTextarea label="SUBTEXT" value={form.subtext} onChange={(e) => setForm({ ...form, subtext: e.target.value })} rows={3} placeholder="Complete 4-wheeler driving training..." />
         <p style={{ fontSize: "12px", fontWeight: 700, color: A.sub, marginBottom: "10px", letterSpacing: "0.5px" }}>STATS</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "14px" }}>
+        <div className="admin-grid-3" style={{ marginBottom: "14px" }}>
           <FInput label="Students Value" value={form.statStudents} onChange={(e) => setForm({ ...form, statStudents: e.target.value })} placeholder="1000+" />
           <FInput label="Rating Value" value={form.statRating} onChange={(e) => setForm({ ...form, statRating: e.target.value })} placeholder="4.8 ★" />
           <FInput label="Pass Rate Value" value={form.statPass} onChange={(e) => setForm({ ...form, statPass: e.target.value })} placeholder="98%" />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "14px" }}>
+        <div className="admin-grid-3" style={{ marginBottom: "14px" }}>
           <FInput label="Students Label" value={form.statStudentsLabel} onChange={(e) => setForm({ ...form, statStudentsLabel: e.target.value })} placeholder="Students Trained" />
           <FInput label="Rating Label" value={form.statRatingLabel} onChange={(e) => setForm({ ...form, statRatingLabel: e.target.value })} placeholder="Google Rating" />
           <FInput label="Pass Label" value={form.statPassLabel} onChange={(e) => setForm({ ...form, statPassLabel: e.target.value })} placeholder="Pass Rate" />
@@ -705,7 +705,7 @@ function ContactSection({ toast }) {
     <div>
       <SectionTitle title="Contact Info" subtitle="Update phone numbers, address and links shown on the website" />
       <Card style={{ maxWidth: "580px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div className="admin-grid-2">
           <FInput label="PHONE 1" value={form.phone1} onChange={(e) => setForm({ ...form, phone1: e.target.value })} placeholder="9133999282" />
           <FInput label="PHONE 2" value={form.phone2} onChange={(e) => setForm({ ...form, phone2: e.target.value })} placeholder="9866902354" />
         </div>
@@ -894,8 +894,8 @@ function LoginScreen() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: A.sidebar }}>
-      <div style={{ background: "#fff", borderRadius: "16px", padding: "40px", width: "360px", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: A.sidebar, padding: "20px" }}>
+      <div style={{ background: "#fff", borderRadius: "16px", padding: "36px 28px", width: "100%", maxWidth: "380px", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: A.pri, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: "20px", margin: "0 auto 14px" }}>SR</div>
           <h1 style={{ fontSize: "20px", fontWeight: 800, color: A.text, marginBottom: "4px" }}>Admin Panel</h1>
@@ -919,12 +919,25 @@ export default function AdminPanel() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("courses");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [toast, setToastState] = useState(null);
 
   const showToast = useCallback((msg, type = "success") => {
     setToastState({ msg, type });
     setTimeout(() => setToastState(null), 3000);
+  }, []);
+
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(true);
+      else setSidebarOpen(false);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   useEffect(() => {
@@ -938,6 +951,11 @@ export default function AdminPanel() {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: A.bg, color: A.sub, fontSize: "16px" }}>Loading...</div>;
   }
   if (!user) return <LoginScreen />;
+
+  const selectTab = (id) => {
+    setActiveTab(id);
+    if (isMobile) setSidebarOpen(false);
+  };
 
   const renderSection = () => {
     const props = { toast: showToast };
@@ -956,70 +974,105 @@ export default function AdminPanel() {
     }
   };
 
+  const activeTabLabel = TABS.find((t) => t.id === activeTab)?.label || "";
+
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", background: A.bg }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); * { box-sizing: border-box; }`}</style>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", background: A.bg, overflow: "hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .admin-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .admin-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .admin-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        @media (max-width: 600px) {
+          .admin-grid-2 { grid-template-columns: 1fr !important; }
+          .admin-grid-3 { grid-template-columns: 1fr !important; }
+          .admin-card-row { flex-direction: column !important; align-items: flex-start !important; }
+          .admin-card-actions { width: 100%; justify-content: flex-end; margin-top: 8px; }
+          .admin-topbar-email { display: none; }
+        }
+      `}</style>
+
+      {/* MOBILE BACKDROP */}
+      {isMobile && sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 998 }} />
+      )}
 
       {/* SIDEBAR */}
-      <aside style={{ width: sidebarOpen ? "230px" : "64px", background: A.sidebar, display: "flex", flexDirection: "column", transition: "width 0.25s", flexShrink: 0, overflowY: "auto", overflowX: "hidden" }}>
-        <div style={{ padding: sidebarOpen ? "20px 16px" : "20px 12px", display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #1e293b" }}>
+      <aside style={{
+        width: "230px", background: A.sidebar, display: "flex", flexDirection: "column",
+        flexShrink: 0, overflowY: "auto", overflowX: "hidden",
+        position: isMobile ? "fixed" : "relative",
+        top: 0, left: 0, bottom: 0, zIndex: 999,
+        transform: isMobile ? (sidebarOpen ? "translateX(0)" : "translateX(-100%)") : "none",
+        transition: "transform 0.25s ease",
+      }}>
+        <div style={{ padding: "20px 16px", display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #1e293b" }}>
           <div style={{ width: "36px", height: "36px", borderRadius: "9px", background: A.pri, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: "14px", flexShrink: 0 }}>SR</div>
-          {sidebarOpen && <div><div style={{ fontSize: "13px", fontWeight: 800, color: "#fff" }}>SAI ROHAN</div><div style={{ fontSize: "10px", color: "#64748b" }}>Admin Panel</div></div>}
+          <div><div style={{ fontSize: "13px", fontWeight: 800, color: "#fff" }}>SAI ROHAN</div><div style={{ fontSize: "10px", color: "#64748b" }}>Admin Panel</div></div>
         </div>
 
         <nav style={{ flex: 1, padding: "12px 8px" }}>
           {TABS.map((t) => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+            <button key={t.id} onClick={() => selectTab(t.id)} style={{
               width: "100%", display: "flex", alignItems: "center", gap: "10px",
-              padding: "10px 10px", borderRadius: "8px", border: "none", cursor: "pointer",
+              padding: "10px", borderRadius: "8px", border: "none", cursor: "pointer",
               background: activeTab === t.id ? `${A.sidebarActive}20` : "transparent",
               color: activeTab === t.id ? A.pri : "#94a3b8",
               fontWeight: activeTab === t.id ? 700 : 500, fontSize: "13px",
               marginBottom: "2px", transition: "all 0.15s", textAlign: "left",
-            }}
-              onMouseEnter={(e) => { if (activeTab !== t.id) e.currentTarget.style.background = A.sidebarHover; }}
-              onMouseLeave={(e) => { if (activeTab !== t.id) e.currentTarget.style.background = "transparent"; }}
-            >
+            }}>
               <span style={{ fontSize: "16px", flexShrink: 0 }}>{t.icon}</span>
-              {sidebarOpen && t.label}
+              {t.label}
             </button>
           ))}
         </nav>
 
         <div style={{ padding: "12px 8px", borderTop: "1px solid #1e293b" }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "16px" }}>
-            {sidebarOpen ? "◀" : "▶"}
-          </button>
-          <button onClick={() => signOut(auth)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "none", background: "#1e293b", color: "#ef4444", cursor: "pointer", fontSize: "13px", fontWeight: 600, marginTop: "4px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-            🚪 {sidebarOpen && "Logout"}
+          <button onClick={() => signOut(auth)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "none", background: "#1e293b", color: "#ef4444", cursor: "pointer", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            🚪 Logout
           </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
-      <main style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
-        {/* Top bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
-          <div>
-            <p style={{ fontSize: "12px", color: A.sub, marginBottom: "2px" }}>Welcome back</p>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: A.text }}>{user.email}</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* TOP BAR */}
+        <div style={{ background: "#fff", borderBottom: `1px solid ${A.border}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: "14px", flexShrink: 0 }}>
+          {isMobile && (
+            <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ width: "20px", height: "2px", background: A.text, display: "block" }} />
+              <span style={{ width: "20px", height: "2px", background: A.text, display: "block" }} />
+              <span style={{ width: "20px", height: "2px", background: A.text, display: "block" }} />
+            </button>
+          )}
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: A.text }}>{TABS.find(t => t.id === activeTab)?.icon} {activeTabLabel}</p>
+            <p className="admin-topbar-email" style={{ fontSize: "11px", color: A.sub }}>{user.email}</p>
           </div>
-          <a href="/" target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", borderRadius: "8px", background: "#e0f2fe", color: "#0369a1", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>
-            🌐 View Website ↗
+          <a href="/" target="_blank" rel="noopener noreferrer"
+            style={{ padding: "8px 14px", borderRadius: "8px", background: "#e0f2fe", color: "#0369a1", textDecoration: "none", fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap" }}>
+            🌐 View Site ↗
           </a>
         </div>
 
-        {renderSection()}
-      </main>
+        {/* SECTION CONTENT */}
+        <main style={{ flex: 1, overflowY: "auto", padding: isMobile ? "20px 16px" : "28px 32px" }}>
+          {renderSection()}
+        </main>
+      </div>
 
       {/* TOAST */}
       {toast && (
         <div style={{
-          position: "fixed", bottom: "24px", right: "24px", zIndex: 9999,
-          background: toast.type === "error" ? A.danger : A.success,
+          position: "fixed", bottom: "24px", right: "16px", left: isMobile ? "16px" : "auto",
+          zIndex: 9999, background: toast.type === "error" ? A.danger : A.success,
           color: "#fff", padding: "14px 20px", borderRadius: "10px",
           fontWeight: 600, fontSize: "14px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-          animation: "slideIn 0.3s ease",
+          animation: "slideIn 0.3s ease", textAlign: "center",
         }}>
           {toast.type === "error" ? "❌" : "✅"} {toast.msg}
         </div>
