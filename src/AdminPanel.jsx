@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import { auth, db } from "./firebase";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { auth, db, storage } from "./firebase";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc,
   deleteDoc, setDoc, serverTimestamp, writeBatch,
 } from "firebase/firestore";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 
 // ─── Admin Color Palette ──────────────────────────────────────────────────────
 const A = {
@@ -367,8 +368,11 @@ function GallerySection({ toast }) {
   const [view, setView] = useState("list");
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const blank = { url: "", caption: "", hidden: false };
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const blank = { url: "", caption: "", hidden: false, storagePath: "" };
   const [form, setForm] = useState(blank);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const fileInputRef = useRef(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -378,23 +382,73 @@ function GallerySection({ toast }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const openNew = () => { setForm(blank); setEditId(null); setView("form"); };
-  const openEdit = (item) => { setForm({ url: item.url || "", caption: item.caption || "", hidden: !!item.hidden }); setEditId(item.id); setView("form"); };
+  const openNew = () => { setForm(blank); setPreviewUrl(""); setEditId(null); setView("form"); };
+  const openEdit = (item) => {
+    setForm({ url: item.url || "", caption: item.caption || "", hidden: !!item.hidden, storagePath: item.storagePath || "" });
+    setPreviewUrl(item.url || "");
+    setEditId(item.id);
+    setView("form");
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast("Please select an image file.", "error"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast("Image must be under 5MB.", "error"); return; }
+    // Show local preview immediately
+    setPreviewUrl(URL.createObjectURL(file));
+    setForm((f) => ({ ...f, _file: file, url: "" }));
+  };
+
+  const uploadFile = async (file) => {
+    const path = `gallery/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+    const storageRef = ref(storage, path);
+    return new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(storageRef, file);
+      task.on("state_changed",
+        (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+        (err) => reject(err),
+        async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          setUploadProgress(null);
+          resolve({ url, path });
+        }
+      );
+    });
+  };
 
   const save = async () => {
-    if (!form.url.trim()) { alert("Image URL is required"); return; }
     setSaving(true);
-    const data = { url: form.url, caption: form.caption, hidden: form.hidden };
     try {
+      let url = form.url;
+      let storagePath = form.storagePath || "";
+      if (form._file) {
+        const result = await uploadFile(form._file);
+        url = result.url;
+        storagePath = result.path;
+      }
+      if (!url) { toast("Please select an image.", "error"); setSaving(false); return; }
+      const data = { url, caption: form.caption, hidden: form.hidden, storagePath };
       if (editId) { await updateDoc(doc(db, "gallery", editId), data); }
       else { await addDoc(collection(db, "gallery"), { ...data, order: Date.now() }); }
       toast("Photo saved!"); await load(); setView("list");
-    } catch (e) { toast("Error: " + e.message, "error"); }
+    } catch (e) { toast("Upload failed: " + e.message, "error"); }
     setSaving(false);
   };
 
   const toggle = async (item) => { await updateDoc(doc(db, "gallery", item.id), { hidden: !item.hidden }); await load(); };
-  const remove = async (id) => { if (!confirm("Delete this photo?")) return; await deleteDoc(doc(db, "gallery", id)); await load(); toast("Deleted."); };
+
+  const remove = async (item) => {
+    if (!confirm("Delete this photo?")) return;
+    // Delete from Storage if uploaded
+    if (item.storagePath) {
+      try { await deleteObject(ref(storage, item.storagePath)); } catch (_) {}
+    }
+    await deleteDoc(doc(db, "gallery", item.id));
+    await load();
+    toast("Deleted.");
+  };
+
   const seed = async () => { if (!confirm("Add default gallery photos?")) return; await seedCollection("gallery", SEED_GALLERY); await load(); toast("Gallery loaded!"); };
 
   if (view === "form") {
@@ -405,17 +459,54 @@ function GallerySection({ toast }) {
           <SectionTitle title={editId ? "Edit Photo" : "Add Photo"} />
         </div>
         <Card style={{ maxWidth: "560px" }}>
-          <FInput label="IMAGE URL" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://example.com/photo.jpg" required />
-          {form.url && (
+          {/* Upload area */}
+          <div style={{ marginBottom: "14px" }}>
+            <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: A.sub, marginBottom: "8px", letterSpacing: "0.5px" }}>PHOTO</label>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${previewUrl ? A.pri : A.border}`, borderRadius: "12px",
+                padding: "20px", textAlign: "center", cursor: "pointer",
+                background: previewUrl ? "#f0f7ff" : "#fafafa", transition: "all 0.2s",
+                overflow: "hidden",
+              }}
+            >
+              {previewUrl ? (
+                <img src={previewUrl} alt="preview"
+                  style={{ width: "100%", maxHeight: "220px", objectFit: "cover", borderRadius: "8px", display: "block" }} />
+              ) : (
+                <div>
+                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>📷</div>
+                  <p style={{ fontSize: "14px", fontWeight: 600, color: A.pri, marginBottom: "4px" }}>Tap to choose photo</p>
+                  <p style={{ fontSize: "12px", color: A.sub }}>JPG, PNG, WEBP — max 5MB</p>
+                </div>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
+            {previewUrl && (
+              <button onClick={() => { setPreviewUrl(""); setForm((f) => ({ ...f, _file: null, url: "" })); fileInputRef.current.value = ""; }}
+                style={{ marginTop: "8px", background: "none", border: "none", color: A.danger, fontSize: "12px", cursor: "pointer", fontWeight: 600 }}>
+                ✕ Remove photo
+              </button>
+            )}
+          </div>
+
+          {/* Upload progress */}
+          {uploadProgress !== null && (
             <div style={{ marginBottom: "14px" }}>
-              <img src={form.url} alt="preview" style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "8px", border: `1px solid ${A.border}` }}
-                onError={(e) => { e.target.style.display = "none"; }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: A.sub, marginBottom: "4px" }}>
+                <span>Uploading...</span><span>{uploadProgress}%</span>
+              </div>
+              <div style={{ height: "6px", background: A.border, borderRadius: "3px", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${uploadProgress}%`, background: A.pri, transition: "width 0.3s" }} />
+              </div>
             </div>
           )}
+
           <FInput label="CAPTION" value={form.caption} onChange={(e) => setForm({ ...form, caption: e.target.value })} placeholder="e.g. Training Session" />
           <Toggle label="Hide from website" checked={form.hidden} onChange={() => setForm({ ...form, hidden: !form.hidden })} />
           <div style={{ display: "flex", gap: "10px" }}>
-            <Btn onClick={save} disabled={saving} style={{ flex: 1 }}>{saving ? "Saving..." : "Save Photo"}</Btn>
+            <Btn onClick={save} disabled={saving} style={{ flex: 1 }}>{saving ? (uploadProgress !== null ? `Uploading ${uploadProgress}%...` : "Saving...") : "Save Photo"}</Btn>
             <Btn onClick={() => setView("list")} outline>Cancel</Btn>
           </div>
         </Card>
@@ -435,7 +526,7 @@ function GallerySection({ toast }) {
       {loading ? <p style={{ color: A.sub }}>Loading...</p> : items.length === 0 ? (
         <EmptyState message="No photos yet." onSeed={seed} />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
           {items.map((p) => (
             <Card key={p.id} style={{ padding: "0", overflow: "hidden", opacity: p.hidden ? 0.5 : 1 }}>
               <img src={p.url} alt={p.caption} style={{ width: "100%", height: "150px", objectFit: "cover", display: "block" }}
@@ -448,7 +539,7 @@ function GallerySection({ toast }) {
                 <div style={{ display: "flex", gap: "6px" }}>
                   <Btn sm outline onClick={() => toggle(p)} style={{ flex: 1 }}>{p.hidden ? "👁 Show" : "🙈 Hide"}</Btn>
                   <Btn sm outline onClick={() => openEdit(p)}>✏️</Btn>
-                  <Btn sm danger onClick={() => remove(p.id)}>🗑</Btn>
+                  <Btn sm danger onClick={() => remove(p)}>🗑</Btn>
                 </div>
               </div>
             </Card>

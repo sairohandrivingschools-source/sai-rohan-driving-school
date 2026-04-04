@@ -245,25 +245,20 @@ export default function SaiRohanDrivingSchool() {
     setMenuOpen(false);
   };
 
-  const whatsappEnquiry = async () => {
+  const whatsappEnquiry = () => {
     const { firstName, phone } = form;
     if (!firstName.trim() || !phone.trim()) {
       alert("Please fill in your First Name and Phone Number.");
       return;
     }
-    // Save enquiry to Firestore
-    try {
-      await addDoc(collection(db, "enquiries"), {
-        ...form,
-        timestamp: serverTimestamp(),
-      });
-    } catch (e) {
-      console.error("Save enquiry error:", e);
-    }
     const c = siteData.contact;
     const waNum = c.whatsapp || "919133999282";
     const msg = `Hi Sai Rohan Driving School! 🚗\n\nI'm interested in learning driving.\n\n👤 First Name: ${form.firstName}\n👤 Last Name: ${form.lastName}\n🎂 Age: ${form.age}\n🧍 Gender: ${form.gender}\n🩸 Blood Group: ${form.bloodGroup}\n📱 Phone: ${form.phone}\n📚 Course: ${form.course}\n⏰ Timing: ${form.timing}\n\nPlease share more details.`;
-    window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, "_blank");
+    // Open WhatsApp synchronously (before any async) — required for iOS Safari
+    window.location.href = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
+    // Save enquiry to Firestore in background (non-blocking)
+    addDoc(collection(db, "enquiries"), { ...form, timestamp: serverTimestamp() })
+      .catch((e) => console.error("Save enquiry error:", e));
   };
 
   const { hero, contact, announcement, courses, reviews, gallery, whys, faqs } = siteData;
