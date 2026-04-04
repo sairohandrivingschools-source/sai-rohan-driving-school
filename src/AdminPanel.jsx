@@ -509,11 +509,6 @@ function GallerySection({ toast }) {
     );
   }
 
-  const saveImgbbKey = async () => {
-    await setDoc(doc(db, "settings", "imgbb"), { key: imgbbKey }, { merge: true });
-    toast("API key saved!");
-  };
-
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
@@ -524,22 +519,6 @@ function GallerySection({ toast }) {
         </div>
       </div>
 
-      {/* imgbb API key setup */}
-      <Card style={{ marginBottom: "20px", background: "#fffbeb", border: "1px solid #fde68a" }}>
-        <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", marginBottom: "6px" }}>📷 Photo Upload Setup (one-time)</p>
-        <p style={{ fontSize: "12px", color: "#78350f", marginBottom: "10px", lineHeight: 1.6 }}>
-          Get a <strong>free API key</strong> from{" "}
-          <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer" style={{ color: "#2196F3" }}>api.imgbb.com</a>
-          {" "}→ Sign up free → Copy your API key → Paste below. Do this once.
-        </p>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <input value={imgbbKey} onChange={(e) => setImgbbKey(e.target.value)}
-            placeholder="Paste your imgbb API key here..."
-            style={{ flex: 1, padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #fde68a", fontSize: "13px", outline: "none", fontFamily: "inherit" }} />
-          <Btn onClick={saveImgbbKey} disabled={!imgbbKey}>Save Key</Btn>
-        </div>
-        {imgbbKey && <p style={{ fontSize: "11px", color: A.success, marginTop: "6px", fontWeight: 600 }}>✅ API key is set — you can upload photos</p>}
-      </Card>
       {loading ? <p style={{ color: A.sub }}>Loading...</p> : items.length === 0 ? (
         <EmptyState message="No photos yet." onSeed={seed} />
       ) : (
