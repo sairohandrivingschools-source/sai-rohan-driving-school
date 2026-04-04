@@ -1,11 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { auth, db, storage } from "./firebase";
+import { auth, db } from "./firebase";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc,
   deleteDoc, setDoc, serverTimestamp, writeBatch,
 } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+
+// Free image upload via imgbb (no paid plan needed)
+const IMGBB_KEY = "f6c4b0b0b0b0b0b0b0b0b0b0b0b0b0b0"; // replaced below via settings
+async function uploadToImgbb(file, apiKey) {
+  const data = new FormData();
+  data.append("image", file);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: data });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error?.message || "Upload failed");
+  return json.data.url;
+}
 
 // ─── Admin Color Palette ──────────────────────────────────────────────────────
 const A = {
@@ -369,22 +379,27 @@ function GallerySection({ toast }) {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
-  const blank = { url: "", caption: "", hidden: false, storagePath: "" };
+  const blank = { url: "", caption: "", hidden: false };
   const [form, setForm] = useState(blank);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [imgbbKey, setImgbbKey] = useState("");
   const fileInputRef = useRef(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const snap = await getDocs(collection(db, "gallery"));
+    const [snap, keySnap] = await Promise.all([
+      getDocs(collection(db, "gallery")),
+      getDoc(doc(db, "settings", "imgbb")),
+    ]);
     setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0)));
+    if (keySnap.exists()) setImgbbKey(keySnap.data().key || "");
     setLoading(false);
   }, []);
   useEffect(() => { load(); }, [load]);
 
   const openNew = () => { setForm(blank); setPreviewUrl(""); setEditId(null); setView("form"); };
   const openEdit = (item) => {
-    setForm({ url: item.url || "", caption: item.caption || "", hidden: !!item.hidden, storagePath: item.storagePath || "" });
+    setForm({ url: item.url || "", caption: item.caption || "", hidden: !!item.hidden });
     setPreviewUrl(item.url || "");
     setEditId(item.id);
     setView("form");
@@ -394,56 +409,36 @@ function GallerySection({ toast }) {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast("Please select an image file.", "error"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast("Image must be under 5MB.", "error"); return; }
-    // Show local preview immediately
+    if (file.size > 32 * 1024 * 1024) { toast("Image must be under 32MB.", "error"); return; }
     setPreviewUrl(URL.createObjectURL(file));
     setForm((f) => ({ ...f, _file: file, url: "" }));
   };
 
-  const uploadFile = async (file) => {
-    const path = `gallery/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-    const storageRef = ref(storage, path);
-    return new Promise((resolve, reject) => {
-      const task = uploadBytesResumable(storageRef, file);
-      task.on("state_changed",
-        (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-        (err) => reject(err),
-        async () => {
-          const url = await getDownloadURL(task.snapshot.ref);
-          setUploadProgress(null);
-          resolve({ url, path });
-        }
-      );
-    });
-  };
-
   const save = async () => {
+    if (!imgbbKey) { toast("Please set your imgbb API key in the settings box above first.", "error"); return; }
     setSaving(true);
+    setUploadProgress(0);
     try {
       let url = form.url;
-      let storagePath = form.storagePath || "";
       if (form._file) {
-        const result = await uploadFile(form._file);
-        url = result.url;
-        storagePath = result.path;
+        setUploadProgress(30);
+        url = await uploadToImgbb(form._file, imgbbKey);
+        setUploadProgress(100);
       }
-      if (!url) { toast("Please select an image.", "error"); setSaving(false); return; }
-      const data = { url, caption: form.caption, hidden: form.hidden, storagePath };
+      if (!url) { toast("Please select an image.", "error"); setSaving(false); setUploadProgress(null); return; }
+      const data = { url, caption: form.caption, hidden: form.hidden };
       if (editId) { await updateDoc(doc(db, "gallery", editId), data); }
       else { await addDoc(collection(db, "gallery"), { ...data, order: Date.now() }); }
       toast("Photo saved!"); await load(); setView("list");
     } catch (e) { toast("Upload failed: " + e.message, "error"); }
     setSaving(false);
+    setUploadProgress(null);
   };
 
   const toggle = async (item) => { await updateDoc(doc(db, "gallery", item.id), { hidden: !item.hidden }); await load(); };
 
   const remove = async (item) => {
     if (!confirm("Delete this photo?")) return;
-    // Delete from Storage if uploaded
-    if (item.storagePath) {
-      try { await deleteObject(ref(storage, item.storagePath)); } catch (_) {}
-    }
     await deleteDoc(doc(db, "gallery", item.id));
     await load();
     toast("Deleted.");
@@ -514,15 +509,37 @@ function GallerySection({ toast }) {
     );
   }
 
+  const saveImgbbKey = async () => {
+    await setDoc(doc(db, "settings", "imgbb"), { key: imgbbKey }, { merge: true });
+    toast("API key saved!");
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
         <SectionTitle title="Gallery" subtitle={`${items.length} photo${items.length !== 1 ? "s" : ""}`} />
         <div style={{ display: "flex", gap: "8px" }}>
           {items.length === 0 && <Btn outline onClick={seed}>Load Defaults</Btn>}
           <Btn onClick={openNew}>+ Add Photo</Btn>
         </div>
       </div>
+
+      {/* imgbb API key setup */}
+      <Card style={{ marginBottom: "20px", background: "#fffbeb", border: "1px solid #fde68a" }}>
+        <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", marginBottom: "6px" }}>📷 Photo Upload Setup (one-time)</p>
+        <p style={{ fontSize: "12px", color: "#78350f", marginBottom: "10px", lineHeight: 1.6 }}>
+          Get a <strong>free API key</strong> from{" "}
+          <a href="https://api.imgbb.com/" target="_blank" rel="noopener noreferrer" style={{ color: "#2196F3" }}>api.imgbb.com</a>
+          {" "}→ Sign up free → Copy your API key → Paste below. Do this once.
+        </p>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <input value={imgbbKey} onChange={(e) => setImgbbKey(e.target.value)}
+            placeholder="Paste your imgbb API key here..."
+            style={{ flex: 1, padding: "9px 12px", borderRadius: "8px", border: "1.5px solid #fde68a", fontSize: "13px", outline: "none", fontFamily: "inherit" }} />
+          <Btn onClick={saveImgbbKey} disabled={!imgbbKey}>Save Key</Btn>
+        </div>
+        {imgbbKey && <p style={{ fontSize: "11px", color: A.success, marginTop: "6px", fontWeight: 600 }}>✅ API key is set — you can upload photos</p>}
+      </Card>
       {loading ? <p style={{ color: A.sub }}>Loading...</p> : items.length === 0 ? (
         <EmptyState message="No photos yet." onSeed={seed} />
       ) : (
